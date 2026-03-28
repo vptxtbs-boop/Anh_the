@@ -36,7 +36,8 @@ import ReactCrop, { type Crop, centerCrop, makeAspectCrop, PixelCrop } from 'rea
 import 'react-image-crop/dist/ReactCrop.css';
 
 // Initialize Gemini AI
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+const genAI = new GoogleGenAI({ apiKey: apiKey || "" });
 
 type Gender = 'Nữ' | 'Nam';
 type Background = 'Nền Xanh' | 'Nền Trắng' | 'Nền Đỏ' | 'Nền Xám';
@@ -256,6 +257,9 @@ export default function App() {
     setError(null);
 
     try {
+      if (!apiKey) {
+        throw new Error("API_KEY_MISSING");
+      }
       const model = "gemini-2.5-flash-image";
       
       // If user has drawn on the canvas, we merge it or send it as context
@@ -311,7 +315,14 @@ export default function App() {
         throw new Error("Không tìm thấy ảnh kết quả.");
       }
     } catch (err: any) {
-      setError("Lỗi xử lý AI. Vui lòng thử lại.");
+      console.error("AI Error:", err);
+      if (err.message === "API_KEY_MISSING") {
+        setError("Thiếu API Key. Vui lòng thiết lập VITE_GEMINI_API_KEY trong môi trường của bạn.");
+      } else if (err.message?.includes("API key not valid")) {
+        setError("API Key không hợp lệ. Vui lòng kiểm tra lại thiết lập của bạn.");
+      } else {
+        setError("Lỗi xử lý AI. Vui lòng thử lại.");
+      }
     } finally {
       setIsProcessing(false);
     }
